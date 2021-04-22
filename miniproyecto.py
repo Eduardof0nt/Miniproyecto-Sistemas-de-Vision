@@ -62,7 +62,7 @@ def agregarimagen(): #Funcion para abrir archivos
     colorComparation = image-color
     colorComparation = np.power(colorComparation,2)
     colorComparation = np.sqrt(np.sum(colorComparation,2))
-    colorComparation = (colorComparation < 30).astype('uint8')
+    colorComparation = (colorComparation < 45).astype('uint8')
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 7))
     colorComparation = cv2.dilate(colorComparation, kernel)
@@ -125,18 +125,17 @@ def agregarimagen(): #Funcion para abrir archivos
 
     #Revisa cual de los contronos rectangulares contiene los contornos del color deseado
 
+    possibleDisplays = []
     for c in displayCnt:
-        containsAll = False
+        weight = 0
         for c2 in digitCnt:
             for c3 in c2:
                 if cv2.pointPolygonTest(c, (c3[0,0],c3[0,1]), False) >= 0:
-                    containsAll = True
-                else:
-                    containsAll = False
-                    break
-        if containsAll:
-            display = c
-            break    
+                    weight += 1
+        possibleDisplays.append((weight,c))
+
+    possibleDisplays.sort(key=lambda x: x[0], reverse=True)
+    display = possibleDisplays[0][1] 
 
     warped = four_point_transform(imageGS, display.reshape(4, 2))
     output = four_point_transform(image, display.reshape(4, 2))
@@ -232,7 +231,7 @@ def agregarimagen(): #Funcion para abrir archivos
         (xm, ym, wm, hm) = cv2.boundingRect(digitCnts[0])
         (x, y, w, h) = cv2.boundingRect(c)
         if (wm*hm/2 > w*h):
-            (x, y, w, h) = (x+w-wm, y+h-hm, wm, hm)
+            (x, y, w, h) = (x+w-wm, y, wm, hm)
     
         roi = imageBorders[y:y + h, x:x + w]
 
@@ -263,7 +262,7 @@ def agregarimagen(): #Funcion para abrir archivos
             area = (xB - xA) * (yB - yA)
             # if the total number of non-zero pixels is greater than
             # 50% of the area, mark the segment as "on"
-            if total / float(area) > 0.5:
+            if total / float(area) > 0.45:
                 on[i]= 1
 
         # lookup the digit and draw it on the image
@@ -296,9 +295,13 @@ def agregarimagen(): #Funcion para abrir archivos
             weights = []
             damaged = np.array(digits[i][1])
             for key in DIGITS_LOOKUP:
-                w = np.sum(np.abs(np.array(key)-damaged))
+                keyA = np.array(key)
+                w = np.sum(np.abs(keyA-damaged))
+                for i in range(0,len(keyA)):
+                    if keyA[i] == 1 and damaged[i] == 0:
+                        w += 5
                 weights.append((w,key))
-                weights.sort(key=lambda x: x[0], reverse=False)
+            weights.sort(key=lambda x: x[0], reverse=False)
             possibleResult.append(DIGITS_LOOKUP[weights[0][1]])
         else:
             possibleResult.append(digits[i][0])

@@ -229,10 +229,11 @@ def agregarimagen(): #Funcion para abrir archivos
     for c in digitCnts2:
         # extract the digit ROI
         (xm, ym, wm, hm) = cv2.boundingRect(digitCnts[0])
+        print((xm, ym, wm, hm))
         (x, y, w, h) = cv2.boundingRect(c)
-        if (wm*hm/2 > w*h):
-            (x, y, w, h) = (x+w-wm, y, wm, hm)
-    
+        if (wm*hm/1.5 > w*h):
+            (x, y, w, h) = (x+w-wm, ym, wm, hm)
+            
         roi = imageBorders[y:y + h, x:x + w]
 
         # compute the width and height of each of the 7 segments
